@@ -1,175 +1,886 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Airline Revenue Management IROPS Seat Allocation Optimizer</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .container {
-            background: white;
-            border-radius: 10px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            max-width: 900px;
-            width: 100%;
-            padding: 40px;
-        }
-        h1 {
-            color: #667eea;
-            margin-bottom: 20px;
-            font-size: 2.5em;
-        }
-        h2 {
-            color: #764ba2;
-            margin-top: 30px;
-            margin-bottom: 15px;
-            font-size: 1.5em;
-        }
-        p {
-            margin-bottom: 15px;
-            color: #555;
-            line-height: 1.8;
-        }
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 20px;
-            margin: 30px 0;
-        }
-        .feature-box {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        .feature-box h3 {
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-        .links {
-            margin-top: 40px;
-            display: flex;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
-        a {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #667eea;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            transition: background 0.3s;
-            font-weight: 600;
-        }
-        a:hover {
-            background: #764ba2;
-        }
-        .tech-stack {
-            background: #f5f5f5;
-            padding: 20px;
-            border-radius: 8px;
-            margin: 20px 0;
-        }
-        .tech-stack ul {
-            list-style: none;
-            columns: 2;
-        }
-        .tech-stack li {
-            padding: 8px 0;
-            color: #555;
-        }
-        .tech-stack li:before {
-            content: "▸ ";
-            color: #667eea;
-            font-weight: bold;
-            margin-right: 8px;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="description" content="Interactive demonstration of cohort-level seat allocation for airline disruption recovery — a constrained optimization approach compared against serial triage.">
+<title>Reroute — Cohort allocation for airline disruption recovery</title>
+<style>
+:root {
+  --bg-0: #050810;
+  --bg-1: #0B111E;
+  --bg-2: #131A2A;
+  --bg-3: #1A2336;
+  --border: #232C42;
+  --border-2: #2D3850;
+  --text-0: #FFFFFF;
+  --text-1: #E2E5EB;
+  --text-2: #9099AC;
+  --text-3: #5C6680;
+  --teal: #2DD4A7;
+  --teal-dim: #1D9E75;
+  --teal-bg: #0F2620;
+  --red: #F87272;
+  --red-dim: #C04141;
+  --red-bg: #281414;
+  --amber: #F2A93B;
+  --blue: #5B9CFF;
+  --purple: #A48BFF;
+  --shadow: 0 24px 48px rgba(0,0,0,0.4);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg-0);
+  color: var(--text-1);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  font-feature-settings: "cv02", "cv03", "cv04", "cv11";
+}
+
+button { font-family: inherit; cursor: pointer; border: none; background: none; color: inherit; }
+button:disabled { cursor: not-allowed; opacity: 0.4; }
+
+input, select { font-family: inherit; }
+
+/* ============================================================
+   LAYOUT
+   ============================================================ */
+
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+
+@media (max-width: 600px) {
+  .container { padding: 0 16px; }
+}
+
+/* ============================================================
+   TOP NAV
+   ============================================================ */
+
+.nav {
+  position: sticky; top: 0; z-index: 50;
+  background: rgba(5,8,16,0.85);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+}
+.nav-inner { display: flex; align-items: center; justify-content: space-between; }
+.nav-brand { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 16px; color: var(--text-0); }
+.nav-brand-mark { width: 24px; height: 24px; background: linear-gradient(135deg, var(--teal) 0%, var(--blue) 100%); border-radius: 6px; }
+.nav-links { display: flex; gap: 24px; align-items: center; }
+.nav-link { font-size: 13px; color: var(--text-2); text-decoration: none; transition: color 0.15s; }
+.nav-link:hover { color: var(--text-0); }
+.nav-cta {
+  font-size: 13px; padding: 7px 14px; border-radius: 6px;
+  background: var(--bg-3); color: var(--text-1); text-decoration: none;
+  border: 1px solid var(--border-2); transition: all 0.15s;
+}
+.nav-cta:hover { background: var(--border-2); color: var(--text-0); }
+
+@media (max-width: 760px) {
+  .nav-links a:not(.nav-cta) { display: none; }
+}
+
+/* ============================================================
+   HERO
+   ============================================================ */
+
+.hero { padding: 64px 0 48px; }
+.hero-eyebrow {
+  display: inline-block;
+  font-size: 11px; font-weight: 600; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--teal);
+  background: var(--teal-bg); padding: 4px 10px; border-radius: 4px;
+  margin-bottom: 20px;
+}
+.hero-title {
+  font-size: clamp(28px, 5vw, 48px);
+  font-weight: 700; line-height: 1.1;
+  letter-spacing: -0.025em; color: var(--text-0);
+  margin-bottom: 20px;
+}
+.hero-title em { color: var(--teal); font-style: normal; }
+.hero-sub {
+  font-size: 17px; color: var(--text-2);
+  max-width: 680px; margin-bottom: 32px;
+  line-height: 1.6;
+}
+.hero-actions { display: flex; gap: 12px; flex-wrap: wrap; }
+.btn {
+  font-size: 14px; font-weight: 500; padding: 12px 22px;
+  border-radius: 8px; transition: all 0.15s ease;
+  display: inline-flex; align-items: center; gap: 8px;
+  text-decoration: none;
+}
+.btn-primary {
+  background: var(--teal); color: var(--bg-0); font-weight: 600;
+}
+.btn-primary:hover { background: #38E5BA; transform: translateY(-1px); }
+.btn-secondary {
+  background: var(--bg-2); color: var(--text-1);
+  border: 1px solid var(--border-2);
+}
+.btn-secondary:hover { background: var(--bg-3); border-color: var(--text-3); }
+
+/* ============================================================
+   AUTO-DEMO HERO ANIMATION
+   ============================================================ */
+
+.hero-demo {
+  margin-top: 56px;
+  background: linear-gradient(180deg, var(--bg-1) 0%, var(--bg-2) 100%);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: var(--shadow);
+}
+.hero-demo-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 24px; flex-wrap: wrap; gap: 12px; }
+.hero-demo-title { font-size: 13px; font-weight: 600; color: var(--text-0); letter-spacing: 0.04em; }
+.hero-demo-status { font-size: 11px; color: var(--text-3); display: inline-flex; align-items: center; gap: 6px; font-variant-numeric: tabular-nums; }
+.status-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--teal); animation: pulse-dot 1.4s ease-in-out infinite; }
+@keyframes pulse-dot { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+
+.hero-demo-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+@media (max-width: 760px) { .hero-demo-grid { grid-template-columns: 1fr; } }
+
+.demo-side {
+  background: var(--bg-0);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px;
+  position: relative;
+  overflow: hidden;
+}
+.demo-side-label { font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; margin-bottom: 6px; }
+.demo-side.manual .demo-side-label { color: var(--red); }
+.demo-side.lp .demo-side-label { color: var(--teal); }
+.demo-side-name { font-size: 16px; font-weight: 600; color: var(--text-0); margin-bottom: 18px; }
+
+.demo-pax-grid {
+  display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px;
+  margin-bottom: 16px;
+}
+.demo-pax-cell {
+  aspect-ratio: 1;
+  border-radius: 4px;
+  background: var(--bg-3);
+  border: 1px solid var(--border);
+  font-size: 8px; color: var(--text-3);
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.4s ease;
+  font-weight: 600;
+}
+.demo-pax-cell.assigned { background: rgba(45, 212, 167, 0.18); border-color: var(--teal-dim); color: var(--teal); }
+.demo-pax-cell.misconnect { background: rgba(248, 114, 114, 0.18); border-color: var(--red-dim); color: var(--red); }
+.demo-pax-cell.processing { background: rgba(242, 169, 59, 0.2); border-color: var(--amber); color: var(--amber); animation: pulse 0.8s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.55; } }
+
+.demo-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.demo-stat-label { font-size: 9px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; }
+.demo-stat-value { font-size: 22px; font-weight: 700; font-variant-numeric: tabular-nums; line-height: 1.1; margin-top: 4px; }
+.demo-side.manual .demo-stat-value { color: var(--red); }
+.demo-side.lp .demo-stat-value { color: var(--teal); }
+.demo-side.lp .demo-stat-value.text-default { color: var(--text-0); }
+
+.demo-callout {
+  margin-top: 24px;
+  padding: 18px;
+  background: var(--bg-3);
+  border-radius: 12px;
+  border: 1px solid var(--border-2);
+  text-align: center;
+}
+.demo-callout-label { font-size: 10px; font-weight: 600; letter-spacing: 0.15em; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
+.demo-callout-value { font-size: 32px; font-weight: 700; color: var(--teal); font-variant-numeric: tabular-nums; }
+.demo-callout-sub { font-size: 12px; color: var(--text-2); margin-top: 4px; }
+
+/* ============================================================
+   SECTION HEADERS
+   ============================================================ */
+
+.section { padding: 80px 0; }
+.section-eyebrow {
+  font-size: 11px; font-weight: 600; letter-spacing: 0.15em;
+  text-transform: uppercase; color: var(--teal); margin-bottom: 12px;
+}
+.section-title {
+  font-size: clamp(24px, 4vw, 36px);
+  font-weight: 700; letter-spacing: -0.02em;
+  color: var(--text-0); margin-bottom: 12px;
+}
+.section-sub { font-size: 16px; color: var(--text-2); max-width: 640px; margin-bottom: 40px; }
+
+/* ============================================================
+   INTERACTIVE TOOL
+   ============================================================ */
+
+.tool {
+  background: var(--bg-1); border: 1px solid var(--border);
+  border-radius: 16px; padding: 24px;
+}
+
+.tool-toolbar {
+  display: flex; gap: 12px; align-items: center; flex-wrap: wrap;
+  padding-bottom: 18px; border-bottom: 1px solid var(--border); margin-bottom: 18px;
+}
+.tool-toolbar > .group { display: flex; align-items: center; gap: 8px; }
+.toolbar-label { font-size: 11px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; }
+
+.select {
+  background: var(--bg-3); color: var(--text-1); border: 1px solid var(--border-2);
+  padding: 8px 12px; border-radius: 6px; font-size: 13px; cursor: pointer;
+  outline: none; transition: border 0.15s;
+  min-width: 200px;
+}
+.select:focus, .select:hover { border-color: var(--text-3); }
+
+.icon-btn {
+  background: var(--bg-3); color: var(--text-1); border: 1px solid var(--border-2);
+  padding: 8px 14px; border-radius: 6px; font-size: 13px; transition: all 0.15s;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.icon-btn:hover:not(:disabled) { background: var(--border-2); border-color: var(--text-3); }
+.icon-btn.primary { background: var(--teal); color: var(--bg-0); border-color: var(--teal); font-weight: 600; }
+.icon-btn.primary:hover:not(:disabled) { background: #38E5BA; }
+
+.spacer { flex: 1; }
+
+/* ============================================================
+   VIEW TABS
+   ============================================================ */
+
+.view-tabs { display: inline-flex; background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 8px; padding: 3px; gap: 2px; }
+.view-tab {
+  padding: 7px 14px; font-size: 12px; border-radius: 5px;
+  color: var(--text-2); transition: all 0.15s; font-weight: 500;
+}
+.view-tab.active { background: var(--bg-0); color: var(--text-0); }
+.view-tab:hover:not(.active) { color: var(--text-1); }
+
+/* ============================================================
+   SCENARIO SUMMARY CARD
+   ============================================================ */
+
+.scenario-summary {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 16px 18px;
+  margin-bottom: 18px;
+  font-size: 13px; line-height: 1.55; color: var(--text-1);
+}
+.scenario-summary strong { color: var(--text-0); font-weight: 600; }
+.scenario-meta-pills {
+  display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap;
+}
+.pill { font-size: 11px; padding: 3px 8px; border-radius: 4px; background: var(--bg-3); color: var(--text-2); font-variant-numeric: tabular-nums; }
+.pill strong { color: var(--text-0); }
+
+/* ============================================================
+   STATS ROW
+   ============================================================ */
+
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 18px; }
+@media (max-width: 760px) { .stats-row { grid-template-columns: 1fr 1fr; } }
+
+.stat {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px; padding: 14px 16px; transition: border 0.2s;
+}
+.stat-label { font-size: 10px; color: var(--text-3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.stat-value { font-size: 22px; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
+.stat-sub { font-size: 11px; color: var(--text-3); margin-top: 4px; }
+.stat.bad .stat-value { color: var(--red); }
+.stat.good .stat-value { color: var(--teal); }
+.stat.delta .stat-value { color: var(--teal); }
+.stat.neutral .stat-value { color: var(--text-0); }
+
+/* ============================================================
+   PASSENGER + FLIGHT PANELS
+   ============================================================ */
+
+.panels { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; }
+@media (max-width: 860px) { .panels { grid-template-columns: 1fr; } }
+
+.panel {
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+.panel-header {
+  padding: 12px 14px; border-bottom: 1px solid var(--border);
+  display: flex; justify-content: space-between; align-items: center;
+}
+.panel-title { font-size: 12px; font-weight: 600; letter-spacing: 0.04em; color: var(--text-1); }
+.panel-meta { font-size: 11px; color: var(--text-3); font-variant-numeric: tabular-nums; }
+
+.pax-list { padding: 10px; max-height: 480px; overflow-y: auto; display: flex; flex-direction: column; gap: 5px; }
+.pax-list::-webkit-scrollbar { width: 6px; }
+.pax-list::-webkit-scrollbar-thumb { background: var(--border-2); border-radius: 3px; }
+.pax-list::-webkit-scrollbar-track { background: transparent; }
+
+.pax {
+  display: grid; grid-template-columns: auto 1fr auto auto; gap: 10px;
+  align-items: center;
+  padding: 9px 11px; border-radius: 6px;
+  background: var(--bg-1); border: 1px solid var(--border);
+  font-size: 12px; transition: all 0.3s ease;
+}
+.pax:hover { border-color: var(--border-2); }
+.pax.assigned-good { border-color: var(--teal-dim); background: rgba(15,38,32,0.4); }
+.pax.assigned-bad { border-color: rgba(192,65,65,0.5); background: rgba(40,20,20,0.4); }
+.pax.misconnect { border-color: var(--red-dim); background: rgba(40,20,20,0.5); }
+.tier-badge {
+  font-size: 9px; font-weight: 700; letter-spacing: 0.08em;
+  padding: 3px 6px; border-radius: 3px; min-width: 36px; text-align: center;
+}
+.tier-EXP { background: var(--teal-dim); color: #FFF; }
+.tier-PLT { background: var(--purple); color: #FFF; }
+.tier-GLD { background: var(--amber); color: var(--bg-0); }
+.tier-REG { background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border-2); }
+
+.pax-name { font-weight: 500; color: var(--text-1); font-size: 12px; }
+.pax-meta { font-size: 10px; color: var(--text-3); font-variant-numeric: tabular-nums; margin-top: 2px; }
+.pax-prob { font-size: 10px; padding: 2px 6px; border-radius: 3px; background: var(--bg-3); color: var(--text-2); font-variant-numeric: tabular-nums; min-width: 36px; text-align: center; }
+.pax-yield { font-size: 11px; font-variant-numeric: tabular-nums; color: var(--text-1); font-weight: 600; }
+.pax-status {
+  font-size: 10px; padding: 3px 8px; border-radius: 4px;
+  background: var(--bg-3); color: var(--text-2); min-width: 84px; text-align: center;
+  font-variant-numeric: tabular-nums; font-weight: 500;
+}
+.pax.assigned-good .pax-status { background: var(--teal-dim); color: #FFF; }
+.pax.misconnect .pax-status { background: var(--red-dim); color: #FFF; }
+
+.flights-list { padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.flight {
+  padding: 10px 12px; border-radius: 8px; background: var(--bg-1);
+  border: 1px solid var(--border);
+}
+.flight-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 6px; }
+.flight-num { font-weight: 600; font-size: 12px; color: var(--text-0); }
+.flight-route { font-size: 11px; color: var(--text-3); margin-bottom: 8px; font-variant-numeric: tabular-nums; }
+.flight-cabins { display: flex; gap: 10px; font-size: 10px; color: var(--text-3); }
+.flight-cabins span { display: inline-flex; gap: 4px; align-items: center; }
+.flight-cabins span strong { color: var(--text-1); font-variant-numeric: tabular-nums; }
+
+/* Side-by-side mode */
+.compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+@media (max-width: 760px) { .compare-grid { grid-template-columns: 1fr; } }
+.compare-grid .panel-title.manual-color { color: var(--red); }
+.compare-grid .panel-title.lp-color { color: var(--teal); }
+
+/* ============================================================
+   ADVANCED PANEL (parameter tuning)
+   ============================================================ */
+
+.advanced {
+  margin-top: 18px;
+  background: var(--bg-2); border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.advanced summary {
+  padding: 14px 18px; cursor: pointer; user-select: none;
+  display: flex; align-items: center; justify-content: space-between;
+  list-style: none; transition: background 0.15s;
+}
+.advanced summary::-webkit-details-marker { display: none; }
+.advanced summary:hover { background: var(--bg-3); }
+.advanced summary .summary-title { font-size: 13px; font-weight: 600; color: var(--text-1); display: flex; align-items: center; gap: 8px; }
+.advanced summary .summary-arrow { font-size: 12px; color: var(--text-3); transition: transform 0.2s; }
+.advanced[open] summary .summary-arrow { transform: rotate(180deg); }
+
+.advanced-body {
+  padding: 18px 20px 20px; border-top: 1px solid var(--border);
+}
+.advanced-help {
+  font-size: 12px; color: var(--text-2); margin-bottom: 16px; line-height: 1.55;
+  background: var(--bg-3); padding: 11px 14px; border-radius: 6px;
+  border-left: 2px solid var(--blue);
+}
+
+.coef-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px 24px; margin-bottom: 18px; }
+@media (max-width: 660px) { .coef-grid { grid-template-columns: 1fr; } }
+
+.coef {
+  display: flex; flex-direction: column; gap: 6px;
+}
+.coef-head { display: flex; justify-content: space-between; align-items: baseline; }
+.coef-name { font-size: 12px; color: var(--text-1); font-weight: 500; }
+.coef-name code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 10px; color: var(--text-3); padding: 0 4px; }
+.coef-value { font-size: 13px; color: var(--teal); font-weight: 600; font-variant-numeric: tabular-nums; }
+.coef-desc { font-size: 11px; color: var(--text-3); line-height: 1.5; }
+.coef input[type="range"] {
+  width: 100%; -webkit-appearance: none; background: transparent;
+  margin: 4px 0;
+}
+.coef input[type="range"]::-webkit-slider-runnable-track { height: 4px; background: var(--border-2); border-radius: 2px; }
+.coef input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 14px; height: 14px; border-radius: 50%;
+  background: var(--teal); margin-top: -5px; cursor: pointer; transition: transform 0.1s;
+}
+.coef input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+.coef input[type="range"]::-moz-range-track { height: 4px; background: var(--border-2); border-radius: 2px; }
+.coef input[type="range"]::-moz-range-thumb { width: 14px; height: 14px; border-radius: 50%; background: var(--teal); border: none; cursor: pointer; }
+
+.advanced-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+
+/* ============================================================
+   ONBOARDING TOAST
+   ============================================================ */
+
+.onboarding {
+  position: fixed; bottom: 24px; right: 24px; max-width: 340px; z-index: 100;
+  background: var(--bg-2); border: 1px solid var(--border-2); border-radius: 12px;
+  padding: 18px; box-shadow: var(--shadow);
+  animation: slide-in 0.3s ease;
+  pointer-events: auto;
+}
+@keyframes slide-in {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.onboarding-step { font-size: 10px; color: var(--text-3); letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 6px; }
+.onboarding-title { font-size: 14px; font-weight: 600; color: var(--text-0); margin-bottom: 8px; }
+.onboarding-text { font-size: 13px; color: var(--text-2); line-height: 1.5; margin-bottom: 14px; }
+.onboarding-buttons { display: flex; gap: 8px; }
+.onboarding-btn {
+  font-size: 12px; padding: 6px 12px; border-radius: 5px;
+}
+.onboarding-btn.primary { background: var(--teal); color: var(--bg-0); font-weight: 600; }
+.onboarding-btn.secondary { background: var(--bg-3); color: var(--text-2); border: 1px solid var(--border-2); }
+.onboarding-close {
+  position: absolute; top: 12px; right: 12px;
+  font-size: 16px; color: var(--text-3); line-height: 1;
+}
+@media (max-width: 600px) {
+  .onboarding { left: 16px; right: 16px; max-width: none; bottom: auto; top: 80px; }
+}
+
+/* ============================================================
+   ABOUT / METHODOLOGY SECTIONS
+   ============================================================ */
+
+.method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+@media (max-width: 860px) { .method-grid { grid-template-columns: 1fr; } }
+
+.method-card {
+  background: var(--bg-1); border: 1px solid var(--border);
+  border-radius: 12px; padding: 22px;
+  transition: border 0.2s;
+}
+.method-card:hover { border-color: var(--border-2); }
+.method-card-num {
+  display: inline-flex; align-items: center; justify-content: center;
+  width: 28px; height: 28px; border-radius: 6px;
+  background: var(--bg-3); color: var(--teal);
+  font-weight: 700; font-size: 12px; margin-bottom: 14px;
+  font-variant-numeric: tabular-nums;
+}
+.method-card h3 { font-size: 16px; color: var(--text-0); margin-bottom: 8px; font-weight: 600; }
+.method-card p { font-size: 13px; color: var(--text-2); line-height: 1.6; }
+.method-card code { font-family: ui-monospace, "SF Mono", Menlo, monospace; font-size: 11px; background: var(--bg-3); padding: 1px 6px; border-radius: 3px; color: var(--text-1); }
+
+/* ============================================================
+   DETAIL SECTION (results / honest notes)
+   ============================================================ */
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+@media (max-width: 860px) { .detail-grid { grid-template-columns: 1fr; } }
+
+.detail-card {
+  background: var(--bg-1); border: 1px solid var(--border);
+  border-radius: 12px; padding: 24px;
+}
+.detail-card h3 { font-size: 16px; color: var(--text-0); margin-bottom: 14px; font-weight: 600; }
+.detail-card p { font-size: 14px; color: var(--text-2); margin-bottom: 12px; line-height: 1.6; }
+.detail-card ul { font-size: 14px; color: var(--text-2); padding-left: 20px; margin-bottom: 12px; line-height: 1.7; }
+.detail-card ul li::marker { color: var(--text-3); }
+.detail-card a { color: var(--teal); text-decoration: none; border-bottom: 1px dotted var(--teal-dim); }
+.detail-card a:hover { color: var(--text-0); }
+
+.kpi-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 12px 0 8px; }
+.kpi { padding: 10px; background: var(--bg-2); border-radius: 6px; text-align: center; }
+.kpi-value { font-size: 18px; font-weight: 700; color: var(--text-0); font-variant-numeric: tabular-nums; }
+.kpi-label { font-size: 10px; color: var(--text-3); margin-top: 2px; text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+
+.footer {
+  border-top: 1px solid var(--border); padding: 36px 0;
+  margin-top: 40px; font-size: 12px; color: var(--text-3);
+}
+.footer-inner { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; }
+.footer a { color: var(--text-2); text-decoration: none; }
+.footer a:hover { color: var(--text-0); }
+
+/* ============================================================
+   LOADING / EMPTY STATES
+   ============================================================ */
+
+.loading-bar { height: 2px; background: var(--bg-2); overflow: hidden; border-radius: 1px; }
+.loading-bar::after {
+  content: ''; display: block; height: 100%; width: 30%;
+  background: var(--teal); animation: loading-slide 1.2s ease-in-out infinite;
+}
+@keyframes loading-slide {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.empty-state {
+  padding: 40px; text-align: center; color: var(--text-3); font-size: 13px;
+}
+
+/* ============================================================
+   TOOLTIP
+   ============================================================ */
+
+[data-tip] { position: relative; cursor: help; }
+[data-tip]::after {
+  content: attr(data-tip); position: absolute; bottom: 100%; left: 50%;
+  transform: translateX(-50%) translateY(-6px); padding: 6px 10px;
+  background: var(--bg-3); border: 1px solid var(--border-2); border-radius: 6px;
+  color: var(--text-1); font-size: 11px; white-space: nowrap;
+  opacity: 0; pointer-events: none; transition: opacity 0.15s; z-index: 10;
+}
+[data-tip]:hover::after { opacity: 1; }
+
+/* ============================================================
+   API STATUS BADGE
+   ============================================================ */
+
+.api-status {
+  font-size: 10px; padding: 3px 8px; border-radius: 4px;
+  display: inline-flex; align-items: center; gap: 4px;
+}
+.api-status.live { background: var(--teal-bg); color: var(--teal); }
+.api-status.offline { background: var(--red-bg); color: var(--red); }
+.api-status .api-status-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+</style>
 </head>
 <body>
-    <div class="container">
-        <h1>✈️ Airline Revenue Management IROPS Seat Allocation Optimizer</h1>
-        
-        <p>Welcome to an advanced optimization system for airline revenue management, focusing on IROPS (Irregular Operations) seat allocation strategies.</p>
-        
-        <h2>About This Project</h2>
-        <p>This project implements sophisticated algorithms for optimizing seat allocation during irregular operations events. It combines revenue management principles with real-time operational constraints to maximize airline profitability while maintaining customer satisfaction.</p>
-        
-        <h2>Key Features</h2>
-        <div class="features">
-            <div class="feature-box">
-                <h3>🎯 Revenue Optimization</h3>
-                <p>Maximize airline revenue through intelligent seat allocation</p>
-            </div>
-            <div class="feature-box">
-                <h3>⚡ Real-time Processing</h3>
-                <p>Handle irregular operations with dynamic seat management</p>
-            </div>
-            <div class="feature-box">
-                <h3>📊 Data-Driven</h3>
-                <p>Advanced analytics and optimization algorithms</p>
-            </div>
-            <div class="feature-box">
-                <h3>🔧 Scalable Architecture</h3>
-                <p>Built for enterprise-grade airline operations</p>
-            </div>
-        </div>
 
-        <h2>Technology Stack</h2>
-        <div class="tech-stack">
-            <ul>
-                <li>Python 3.x</li>
-                <li>Optimization Algorithms</li>
-                <li>Docker Containerization</li>
-                <li>REST APIs</li>
-                <li>Data Science Libraries</li>
-                <li>Machine Learning</li>
-            </ul>
-        </div>
-
-        <h2>Getting Started</h2>
-        <p>To get started with this project:</p>
-        <ul style="margin-left: 20px; margin-bottom: 15px;">
-            <li>Clone the repository</li>
-            <li>Install dependencies from <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">pyproject.toml</code></li>
-            <li>Review the <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">README.md</code> for detailed documentation</li>
-            <li>Check the <code style="background: #f0f0f0; padding: 2px 6px; border-radius: 3px;">examples/</code> folder for sample implementations</li>
-        </ul>
-
-        <h2>Project Structure</h2>
-        <ul style="margin-left: 20px; margin-bottom: 15px;">
-            <li><strong>reroute/</strong> - Core rerouting optimization logic</li>
-            <li><strong>web/</strong> - Web interface and API</li>
-            <li><strong>examples/</strong> - Usage examples and sample data</li>
-            <li><strong>tests/</strong> - Test suite</li>
-            <li><strong>docs/</strong> - Documentation</li>
-            <li><strong>results/</strong> - Optimization results and reports</li>
-        </ul>
-
-        <h2>License</h2>
-        <p>This project is licensed under the MIT License - see the LICENSE file for details.</p>
-
-        <div class="links">
-            <a href="https://github.com/Robertn02/Airline-Revenue-Management-IROPS-Seat-Allocation-Optimizer">📘 View on GitHub</a>
-            <a href="https://github.com/Robertn02/Airline-Revenue-Management-IROPS-Seat-Allocation-Optimizer/blob/main/README.md">📖 Read Documentation</a>
-        </div>
+<!-- ============ NAV ============ -->
+<nav class="nav">
+  <div class="container nav-inner">
+    <div class="nav-brand">
+      <span class="nav-brand-mark"></span>
+      <span>Reroute</span>
     </div>
+    <div class="nav-links">
+      <a class="nav-link" href="#try">Try it</a>
+      <a class="nav-link" href="#method">How it works</a>
+      <a class="nav-link" href="#detail">Results</a>
+      <a class="nav-cta" href="https://github.com/Robertn02/Airline-Revenue-Management-IROPS-Seat-Allocation-Optimizer" target="_blank" rel="noopener">View on GitHub →</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ============ HERO ============ -->
+<section class="hero">
+  <div class="container">
+    <div class="hero-eyebrow">Operations Research · IROPS · Open Source</div>
+    <h1 class="hero-title">
+      When seats are scarce,<br>
+      the right allocation <em>saves real money.</em>
+    </h1>
+    <p class="hero-sub">
+      Reroute is an open-source constrained-optimization approach to airline disruption recovery. It compares cohort-level seat allocation (LP) against the priority-queue triage gate agents currently use.
+    </p>
+    <div class="hero-actions">
+      <a class="btn btn-primary" href="#try">Try the simulator</a>
+      <a class="btn btn-secondary" href="#method">See the methodology</a>
+    </div>
+
+    <!-- Auto-running hero animation -->
+    <div class="hero-demo">
+      <div class="hero-demo-header">
+        <div class="hero-demo-title">Live comparison · 18 passengers · 3 recovery flights</div>
+        <div class="hero-demo-status"><span class="status-dot"></span><span id="hero-status">Cycling scenarios...</span></div>
+      </div>
+      <div class="hero-demo-grid">
+        <div class="demo-side manual">
+          <div class="demo-side-label">Baseline</div>
+          <div class="demo-side-name">Manual triage</div>
+          <div class="demo-pax-grid" id="hero-manual-grid"></div>
+          <div class="demo-stats">
+            <div>
+              <div class="demo-stat-label">Loss</div>
+              <div class="demo-stat-value" id="hero-manual-loss">$0</div>
+            </div>
+            <div>
+              <div class="demo-stat-label">Misconnects</div>
+              <div class="demo-stat-value" id="hero-manual-miss">0</div>
+            </div>
+          </div>
+        </div>
+        <div class="demo-side lp">
+          <div class="demo-side-label">Reroute</div>
+          <div class="demo-side-name">Cohort LP allocation</div>
+          <div class="demo-pax-grid" id="hero-lp-grid"></div>
+          <div class="demo-stats">
+            <div>
+              <div class="demo-stat-label">Loss</div>
+              <div class="demo-stat-value" id="hero-lp-loss">$0</div>
+            </div>
+            <div>
+              <div class="demo-stat-label">Solve time</div>
+              <div class="demo-stat-value text-default" id="hero-lp-time">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="demo-callout">
+        <div class="demo-callout-label">Avoidable loss reduced</div>
+        <div class="demo-callout-value" id="hero-delta">$0</div>
+        <div class="demo-callout-sub" id="hero-delta-sub">Cycling through real solver outputs from the synthetic dataset</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ TRY IT (interactive tool) ============ -->
+<section class="section" id="try">
+  <div class="container">
+    <div class="section-eyebrow">Interactive simulator</div>
+    <h2 class="section-title">Run scenarios. Tune the model. See what changes.</h2>
+    <p class="section-sub">Pick a pre-computed scenario, or generate a fresh one. Adjust the cost weights to see how the optimizer shifts its trade-offs. Every number you see is a real solver output.</p>
+
+    <div class="tool">
+      <!-- Toolbar -->
+      <div class="tool-toolbar">
+        <div class="group">
+          <span class="toolbar-label">Scenario</span>
+          <select class="select" id="scenario-select"></select>
+        </div>
+
+        <div class="group">
+          <button class="icon-btn" id="btn-prev" data-tip="Previous scenario">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M10 12L6 8L10 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+          <button class="icon-btn" id="btn-next" data-tip="Next scenario">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M6 4L10 8L6 12" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+
+        <div class="group">
+          <button class="icon-btn primary" id="btn-generate" data-tip="Generate a fresh random scenario (requires API)">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M14 2L9 7M14 2H10M14 2V6M2 14L7 9M2 14H6M2 14V10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            New scenario
+          </button>
+        </div>
+
+        <div class="spacer"></div>
+
+        <div class="api-status" id="api-status" data-tip="Live re-solving requires the API server (run: reroute serve)">
+          <span class="api-status-dot"></span>
+          <span id="api-status-text">Static mode</span>
+        </div>
+
+        <div class="view-tabs">
+          <button class="view-tab" data-view="manual">Baseline</button>
+          <button class="view-tab active" data-view="lp">Reroute</button>
+          <button class="view-tab" data-view="side">Compare</button>
+        </div>
+      </div>
+
+      <!-- Scenario summary -->
+      <div class="scenario-summary" id="scenario-summary"></div>
+
+      <!-- Stats row -->
+      <div class="stats-row" id="stats"></div>
+
+      <!-- Single view -->
+      <div id="single-view">
+        <div class="panels">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title" id="pax-panel-title">Passenger assignments</div>
+              <div class="panel-meta" id="pax-panel-meta"></div>
+            </div>
+            <div class="pax-list" id="pax-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title">Recovery flights</div>
+              <div class="panel-meta" id="flights-meta"></div>
+            </div>
+            <div class="flights-list" id="flights-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Side-by-side view -->
+      <div id="side-view" style="display:none;">
+        <div class="compare-grid">
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title manual-color">Baseline · manual triage</div>
+              <div class="panel-meta" id="side-manual-meta"></div>
+            </div>
+            <div class="pax-list" id="side-manual-list"></div>
+          </div>
+          <div class="panel">
+            <div class="panel-header">
+              <div class="panel-title lp-color">Reroute · LP allocation</div>
+              <div class="panel-meta" id="side-lp-meta"></div>
+            </div>
+            <div class="pax-list" id="side-lp-list"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Advanced: cost coefficient tuning -->
+      <details class="advanced">
+        <summary>
+          <div class="summary-title">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="5" stroke="currentColor" stroke-width="1.5"/>
+              <path d="M8 1V3M8 13V15M15 8H13M3 8H1M12.95 3.05L11.54 4.46M4.46 11.54L3.05 12.95M12.95 12.95L11.54 11.54M4.46 4.46L3.05 3.05" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Tune cost coefficients <span style="color:var(--text-3);font-weight:400;">— change the optimizer's trade-offs</span>
+          </div>
+          <span class="summary-arrow">▼</span>
+        </summary>
+        <div class="advanced-body">
+          <div class="advanced-help" id="advanced-help">
+            <strong>How this works:</strong> The LP minimizes a weighted sum of cost components. Increasing β makes the optimizer aggressively avoid cabin downgrades. Increasing λ makes it aggressively avoid misconnects.
+          </div>
+
+          <div class="coef-grid">
+            <div class="coef">
+              <div class="coef-head">
+                <span class="coef-name">α — Yield dilution <code>alpha_yield</code></span>
+                <span class="coef-value" id="val-alpha">1.00</span>
+              </div>
+              <input type="range" id="slide-alpha" min="0" max="3" step="0.05" value="1.0">
+              <span class="coef-desc">Weight on revenue dilution from same-day rebooking.</span>
+            </div>
+            <div class="coef">
+              <div class="coef-head">
+                <span class="coef-name">β — Spill <code>beta_spill</code></span>
+                <span class="coef-value" id="val-beta">0.85</span>
+              </div>
+              <input type="range" id="slide-beta" min="0" max="3" step="0.05" value="0.85">
+              <span class="coef-desc">Weight on cabin downgrades. Higher → optimizer protects premium cabins more.</span>
+            </div>
+            <div class="coef">
+              <div class="coef-head">
+                <span class="coef-name">δ — Customer harm <code>delta_harm</code></span>
+                <span class="coef-value" id="val-delta">1.50</span>
+              </div>
+              <input type="range" id="slide-delta" min="0" max="3" step="0.05" value="1.5">
+              <span class="coef-desc">Weight on SSR / unaccompanied minor mishandling.</span>
+            </div>
+            <div class="coef">
+              <div class="coef-head">
+                <span class="coef-name">λ — Misconnect <code>lambda_miss</code></span>
+                <span class="coef-value" id="val-lambda">1.00</span>
+              </div>
+              <input type="range" id="slide-lambda" min="0" max="3" step="0.05" value="1.0">
+              <span class="coef-desc">Weight on unmitigated misconnects. Higher → optimizer fights harder to assign everyone.</span>
+            </div>
+          </div>
+
+          <div class="advanced-actions">
+            <button class="icon-btn primary" id="btn-resolve">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M2 8C2 4.7 4.7 2 8 2C10.4 2 12.5 3.4 13.4 5.4M14 8C14 11.3 11.3 14 8 14C5.6 14 3.5 12.6 2.6 10.6M14 2V5.4H10.6M2 14V10.6H5.4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              Re-solve with these weights
+            </button>
+            <button class="icon-btn" id="btn-reset-coefs">Reset to defaults</button>
+          </div>
+        </div>
+      </details>
+    </div>
+
+  </div>
+</section>
+
+<!-- ============ HOW IT WORKS ============ -->
+<section class="section" id="method">
+  <div class="container">
+    <div class="section-eyebrow">How it works</div>
+    <h2 class="section-title">Three components, one decision.</h2>
+    <p class="section-sub">A calibrated risk model feeds expected misconnect probabilities into a constrained linear program. The LP solves for the cohort assignment that minimizes total expected loss.</p>
+
+    <div class="method-grid">
+      <div class="method-card">
+        <div class="method-card-num">1</div>
+        <h3>Risk estimation</h3>
+        <p>A gradient boosted tree (LightGBM) predicts per-passenger misconnect probability from delay, connection buffer, tier, and special service flags. Post-calibrated with Platt scaling.</p>
+      </div>
+      <div class="method-card">
+        <div class="method-card-num">2</div>
+        <h3>LP allocation</h3>
+        <p>Variables index over <code>(passenger, flight, cabin)</code>. Objective minimizes expected loss across the cohort. Hard constraints enforce capacity, MCT feasibility, and a loyalty flow.</p>
+      </div>
+      <div class="method-card">
+        <div class="method-card-num">3</div>
+        <h3>Audit trail</h3>
+        <p>Every assignment logs the binding constraints and the cost components that determined it. Inputs and decisions are reproducible, deployable in regulated environments.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ RESULTS / DETAIL ============ -->
+<section class="section" id="detail">
+  <div class="container">
+    <div class="section-eyebrow">What we measured</div>
+    <h2 class="section-title">Honest results from 100 simulated scenarios.</h2>
+    <p class="section-sub">All numbers from running the actual code on synthetic data calibrated to public BTS statistics. The full simulation pipeline is in the GitHub repo.</p>
+
+    <div class="detail-grid">
+      <div class="detail-card">
+        <h3>Aggregate results</h3>
+        <div class="kpi-row">
+          <div class="kpi"><div class="kpi-value">18.8%</div><div class="kpi-label">Median Δ</div></div>
+          <div class="kpi"><div class="kpi-value">$134K</div><div class="kpi-label">Total saved</div></div>
+          <div class="kpi"><div class="kpi-value">7 ms</div><div class="kpi-label">Mean solve</div></div>
+          <div class="kpi"><div class="kpi-value">0.92</div><div class="kpi-label">AUC</div></div>
+        </div>
+        <p>Across 100 scenarios with realistic seat scarcity, the LP allocator produces 18.8% lower expected loss than serial triage at the median. Total avoidable loss reduced: $134,000 across 3000+ passengers.</p>
+        <p>Risk model AUC 0.92, Brier score 0.058 — well-calibrated probabilities suitable for direct use in the optimizer's objective.</p>
+      </div>
+      <div class="detail-card">
+        <h3>What this is, and what it isn't</h3>
+        <p>This is an open-source exploration of an unsolved problem in airline operations. The synthetic data is calibrated to public sources but is not real airline data.</p>
+        <p>If you work in airline revenue management or ops control, we'd love your feedback on assumptions, data sources, and deployability. Check the README and GitHub repository for full documentation.</p>
+        <p><a href="https://github.com/Robertn02/Airline-Revenue-Management-IROPS-Seat-Allocation-Optimizer" target="_blank" rel="noopener">View on GitHub →</a></p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ FOOTER ============ -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div>Reroute · MIT License · An open-source operations research project.</div>
+    <div>
+      <a href="https://github.com/Robertn02/Airline-Revenue-Management-IROPS-Seat-Allocation-Optimizer" target="_blank" rel="noopener">GitHub</a>
+      &nbsp;·&nbsp;
+      <a href="#try">Try the simulator</a>
+    </div>
+  </div>
+</footer>
+
+<!-- Onboarding (rendered by JS, can be dismissed) -->
+<div id="onboarding-root"></div>
+
+<!--
+  CONFIGURATION
+  Note: Your web/app.js and scenarios data are in the /web folder
+  To use the interactive features, ensure app.js is accessible or deployed with this file.
+-->
+<script src="app.js"></script>
 </body>
 </html>
