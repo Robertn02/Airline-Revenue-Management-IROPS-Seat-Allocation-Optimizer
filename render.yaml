@@ -1,0 +1,24 @@
+# render.yaml — Render Infrastructure-as-Code blueprint
+#
+# This file lets Render automatically configure the service when you connect
+# your GitHub repo through the "Blueprint" deploy mode.
+#
+# After your first deployment, you will get a URL like:
+#   https://reroute-api-XXXX.onrender.com
+#
+# Update web/app.js's API_URL_OVERRIDE to point at it (or leave the auto-probe
+# logic — it now also tries window.REROUTE_API_URL if set).
+
+services:
+  - type: web
+    name: reroute-api
+    runtime: docker
+    repo: https://github.com/YOUR_USERNAME/reroute  # update to your fork
+    branch: main
+    plan: free
+    region: oregon  # closest US-West region; pick whichever you prefer
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"

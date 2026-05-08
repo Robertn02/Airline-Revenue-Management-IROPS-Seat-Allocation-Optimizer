@@ -1,0 +1,70 @@
+name: deploy-pages
+
+# Builds the static web demo and publishes it to GitHub Pages.
+# Generates fresh demo scenarios from the trained model so the deployed
+# site shows current solver outputs, not stale data.
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        run: pip install -e ".[api]"
+
+      - name: Train model
+        run: |
+          mkdir -p results
+          reroute train --scenarios 200 --output results/model.pkl
+
+      - name: Generate demo scenarios
+        run: reroute export-demo --scenarios 12 --output results/scenarios_for_demo.json
+
+      - name: Assemble Pages site
+        run: |
+          mkdir -p _site
+          cp -r web/* _site/
+          # If you've deployed an API, set its URL via the GitHub Pages env var
+          # REROUTE_API_URL or hard-code it below.
+          if [ -n "${REROUTE_API_URL}" ]; then
+            sed -i "s|<!-- <script>window.REROUTE_API_URL.*-->|<script>window.REROUTE_API_URL = \"${REROUTE_API_URL}\";</script>|" _site/index.html
+          fi
+          # Refresh the demo data with the just-built one so visitors see current outputs
+          cp results/scenarios_for_demo.json _site/scenarios_for_demo.json
+        env:
+          REROUTE_API_URL: ${{ vars.REROUTE_API_URL }}
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

@@ -1,0 +1,74 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "reroute"
+version = "0.1.0"
+description = "Cohort-level seat allocation for airline disruption recovery"
+readme = "README.md"
+requires-python = ">=3.10"
+license = {text = "MIT"}
+authors = [
+    {name = "Phuc Nguyen"}
+]
+keywords = ["airline", "operations-research", "optimization", "irops", "linear-programming"]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.0",
+    "scipy>=1.11",
+    "scikit-learn>=1.4",
+    "lightgbm>=4.0",
+    "matplotlib>=3.7",
+    "pyyaml>=6.0",
+    "click>=8.1",
+    "rich>=13.0",
+]
+
+[project.optional-dependencies]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.27", "pydantic>=2.5"]
+dev = ["pytest>=7.4", "pytest-cov>=4.1", "ruff>=0.1", "mypy>=1.8"]
+
+[project.scripts]
+reroute = "reroute.cli.main:cli"
+
+[project.urls]
+Homepage = "https://github.com/phuc-nguyen/reroute"
+Documentation = "https://github.com/phuc-nguyen/reroute/tree/main/docs"
+Issues = "https://github.com/phuc-nguyen/reroute/issues"
+
+[tool.setuptools]
+packages = ["reroute", "reroute.core", "reroute.solver", "reroute.model", "reroute.sim", "reroute.api", "reroute.cli"]
+
+[tool.setuptools.package-data]
+reroute = ["py.typed"]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = "test_*.py"
+filterwarnings = [
+    "ignore::UserWarning",
+    "ignore::DeprecationWarning",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "W", "I", "N", "B", "UP"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.10"
+strict = false
+ignore_missing_imports = true
